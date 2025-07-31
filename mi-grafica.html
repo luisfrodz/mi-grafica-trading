@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Equity Curve Trading (Live)</title>
+  <script src="https://unpkg.com/lightweight-charts@4.0.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    body { background: #1e1e2a; color: #fff; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    #chart { width: 90%; height: 80%; }
+  </style>
+</head>
+<body>
+  <div id="chart"></div>
+  <script>
+    async function fetchData() {
+      const resp = await fetch('https://docs.google.com/spreadsheets/d/15Y0m0nLhq-EgTAWORPgPTBxmHQRo3NS-/export?format=csv');
+      const txt = await resp.text();
+      const rows = txt.trim().split('\n').slice(1);
+      let total = 0;
+      const arr = rows.map((r, i) => {
+        const val = parseFloat(r.split(',')[1]);
+        if (!isNaN(val)) total += val;
+        return { time: i + 1, value: total };
+      }).filter(p => !isNaN(p.value));
+      return arr;
+    }
+
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      layout: { background: { color: '#222031' }, textColor: '#fff' },
+      grid: { vertLines: { color: '#444' }, horzLines: { color: '#444' } },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderVisible: false, timeVisible: true }
+    });
+
+    const areaSeries = chart.addAreaSeries({
+      lineColor: '#0f0', topColor: 'rgba(0,255,0,0.4)', bottomColor: 'rgba(0,255,0,0.1)'
+    });
+
+    async function draw() {
+      const data = await fetchData();
+      areaSeries.setData(data);
+      chart.timeScale().fitContent();
+    }
+    draw();
+    setInterval(draw, 60 * 1000); // refresca cada minuto
+  </script>
+</body>
+</html>
